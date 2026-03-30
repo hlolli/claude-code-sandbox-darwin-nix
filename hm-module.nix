@@ -115,6 +115,12 @@
     preamblePath = cfg.preamble;
     bashrcSource = cfg.bashrc;
     zshrcSource = cfg.zshrc;
+    compactionConfig =
+      {inherit (cfg.compaction) auto prune;}
+      // lib.optionalAttrs (cfg.compaction.reserved != null) {
+        inherit (cfg.compaction) reserved;
+      };
+    providerJSON = cfg.provider;
     inherit (cfg) extraPackages extraEnv extraFwdEnv;
   };
 
@@ -199,6 +205,37 @@ in {
       enable =
         mkEnableOption "treefmt as the exclusive formatter (disables all built-in formatters)"
         // {default = true;};
+    };
+
+    compaction = {
+      auto =
+        mkEnableOption "automatic compaction when context is full"
+        // {default = true;};
+      prune =
+        mkEnableOption "pruning of old tool outputs"
+        // {default = true;};
+      reserved = mkOption {
+        type = types.nullOr types.ints.unsigned;
+        default = null;
+        example = 16384;
+        description = "Token buffer for compaction. Leaves enough headroom to avoid overflow during the compaction pass itself.";
+      };
+    };
+
+    provider = mkOption {
+      type = types.attrsOf types.anything;
+      default = {};
+      example = literalExpression ''
+        {
+          openai.models."gpt-5.4".limit = { context = 100 * 1000; output = 32768; };
+          anthropic.models."claude-opus-4-6".limit = { context = 100 * 1000; output = 32768; };
+        }
+      '';
+      description = ''
+        Per-provider configuration and model overrides, passed verbatim as the
+        top-level "provider" key in `opencode.json`. See
+        <https://opencode.ai/config.json> for the full `ProviderConfig` schema.
+      '';
     };
 
     notifications = {

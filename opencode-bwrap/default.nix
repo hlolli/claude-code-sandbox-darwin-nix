@@ -14,6 +14,11 @@
   extraFwdEnv ? [],
   notifierConfig ? plugins.opencode-notifier-config,
   treefmtEnabled ? true,
+  compactionConfig ? {
+    auto = true;
+    prune = true;
+  },
+  providerJSON ? {},
 }: let
   # opencode 1.2.27 from nixos-unstable:
   unsafe-src = pkgs.fetchurl {
@@ -43,6 +48,7 @@
 
   config = {
     "$schema" = "https://opencode.ai/config.json";
+    compaction = compactionConfig;
     share = "disabled";
     theme = "solarized";
     lsp = false;
@@ -104,6 +110,7 @@
       };
     };
     autoupdate = false;
+    provider = providerJSON;
     experimental = {
       disable_paste_summary = true;
     };
