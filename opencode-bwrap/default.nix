@@ -216,27 +216,14 @@
         --tmpfs /run/user/"$UID"
         --setenv XDG_RUNTIME_DIR /run/user/"$UID"
         --tmpfs "$HOME"
-        --ro-bind /nix /nix
-        --ro-bind /etc/resolv.conf /etc/resolv.conf
         --ro-bind ${pkgs.writeText "etc-hosts" "127.0.0.1 localhost\n"} /etc/hosts
         --ro-bind "$etc_passwd" /etc/passwd
         --ro-bind "$etc_group" /etc/group
-        --ro-bind /run/current-system/sw /run/current-system/sw/
-        --ro-bind /etc/profiles/per-user/"$USER" /etc/profiles/per-user/"$USER"
-        --ro-bind /etc/static/ssl /etc/static/ssl
-        --ro-bind /etc/ssl /etc/ssl
-        --ro-bind /etc/static/nix /etc/static/nix
-        --ro-bind /etc/nix /etc/nix
-        --ro-bind /etc/static/terminfo /etc/static/terminfo
-        --ro-bind /etc/terminfo /etc/terminfo
-        --ro-bind /bin/sh /bin/sh
-        --ro-bind /usr/bin/env /usr/bin/env
         --ro-bind ${bashrc} /etc/bashrc
         --ro-bind ${zshrc} /etc/zshrc
         --ro-bind ${pkgs.emptyFile} "$HOME"/.zshrc
         --ro-bind "${pkgs.nix-direnv}/share/nix-direnv/direnvrc" "$HOME"/.config/direnv/lib/nix-direnv.sh
         --setenv SHELL "$shell_exe"
-        --setenv HOME "$HOME"
         --setenv PATH ${lib.makeBinPath ([
           unsafe
         ]
@@ -245,24 +232,44 @@
           escapeHatchShims
         ]
         ++ extraPackages)}:/etc/profiles/per-user/"$USER"/bin:/run/current-system/sw/bin:"$HOME"/.bin
-        --setenv USER "$USER"
-        --setenv TERM "$TERM"
         --setenv TERMINFO_DIRS /etc/profiles/per-user/"$USER"/share/terminfo:/run/current-system/sw/share/terminfo
-        --setenv LANG "$LANG"
         --setenv NIX_PATH ${lib.escapeShellArg "nixpkgs=${pkgs.path}"}
         --setenv OPENCODE_DISABLE_LSP_DOWNLOAD "true"
       )
 
-      if [ -f /etc/machine-id ]; then
-        bwrap_opts+=( --ro-bind /etc/machine-id /etc/machine-id )
-      fi
+      # Host paths bind-mounted read-only at the same location.
+      # Paths that don't exist on the host are silently skipped.
+      host_ro_mounts=(
+        /bin/sh
+        /etc/machine-id
+        /etc/nix
+        /etc/profiles/per-user/"$USER"
+        /etc/resolv.conf
+        /etc/ssl
+        /etc/static/nix
+        /etc/static/ssl
+        /etc/static/terminfo
+        /etc/terminfo
+        /nix
+        /run/current-system/sw
+        /usr/bin/env
+      )
+      for p in "''${host_ro_mounts[@]}"; do
+        [ -e "$p" ] && bwrap_opts+=( --ro-bind "$p" "$p" )
+      done
 
-      # Forward all `LOCALE_ARCHIVE*` env. variables:
-      while IFS='=' read -r _name _; do
-        if [[ "$_name" == LOCALE_ARCHIVE* ]]; then
-          bwrap_opts+=( --setenv "$_name" "''${!_name}" )
-        fi
-      done < <(env)
+      # Host env vars forwarded into the sandbox (skipped if unset).
+      host_env_forward=(
+        HOME
+        LANG
+        LOCALE_ARCHIVE
+        LOCALE_ARCHIVE_2_27
+        TERM
+        USER
+      )
+      for v in "''${host_env_forward[@]}"; do
+        [ -n "''${!v+x}" ] && bwrap_opts+=( --setenv "$v" "''${!v}" )
+      done
 
       for d in "''${persist_dirs[@]}" ; do
         mkdir -p "$sandbox_home"/"$d"
