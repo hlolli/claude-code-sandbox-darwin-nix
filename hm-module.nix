@@ -180,6 +180,11 @@ in {
           echo "Nix shell: $(if [ -n "''${IN_NIX_SHELL:-}" ]; then echo yes; else echo no; fi)"
           echo "Direnv: $(if [ -n "''${DIRENV_FILE:-}" ]; then echo yes; else echo no; fi)"
           echo
+          if git rev-parse --show-toplevel >/dev/null 2>/dev/null ; then
+            echo '## Project information'
+            echo
+            ${lib.getExe pkgs.onefetch} --no-art --no-color-palette 2>&1 | ${lib.getExe pkgs.ansifilter}
+          fi
         '';
       });
       example = literalExpression ''null'';
