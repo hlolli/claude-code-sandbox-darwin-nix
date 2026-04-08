@@ -8,6 +8,7 @@ const PRESERVED_TAIL_MARKERS = [
   // "\nHere is some useful information about the environment ",
   // "\nSkills provide specialized instructions and workflows for specific tasks.",
   "\nInstructions from: ", // keep the preamble.md
+  "\nInstructions from command: ", // keep the OPENCODE_EXTRA_INSTRUCTIONS_COMMAND output
 ];
 
 function stripOpenCodeSystemPrompt(systemPrompt: string) {

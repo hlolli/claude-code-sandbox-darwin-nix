@@ -113,6 +113,7 @@
     treefmtEnabled = cfg.treefmt.enable;
     bwrap-escape-hatch = escapeHatch;
     preamblePath = cfg.preamble;
+    preambleScriptPath = cfg.preambleScript;
     bashrcSource = cfg.bashrc;
     zshrcSource = cfg.zshrc;
     compactionConfig =
@@ -160,6 +161,29 @@ in {
       type = types.path;
       default = ./opencode-bwrap/preamble.md;
       description = "Path to the preamble / instructions file mounted into the sandbox.";
+    };
+
+    preambleScript = mkOption {
+      type = types.nullOr types.path;
+      default = lib.getExe (pkgs.writeShellApplication {
+        name = "preamble-cmd";
+        text = ''
+          echo
+          echo '## Environment'
+          echo
+          echo "System: $(uname -a)"
+          echo "Date: $(date --utc --rfc-email)"
+          echo "User: $(id)"
+          echo "Home directory: $HOME"
+          echo "Current working directory: $(pwd)"
+          echo "Git root: $(git rev-parse --show-toplevel 2>/dev/null || echo 'not in a Git repository')"
+          echo "Nix shell: $(if [ -n "''${IN_NIX_SHELL:-}" ]; then echo yes; else echo no; fi)"
+          echo "Direnv: $(if [ -n "''${DIRENV_FILE:-}" ]; then echo yes; else echo no; fi)"
+          echo
+        '';
+      });
+      example = literalExpression ''null'';
+      description = "Store path to a script whose stdout is appended to the preamble at runtime (sets `instructions_command` in the OpenCode config). `null` disables the feature.";
     };
 
     bashrc = mkOption {

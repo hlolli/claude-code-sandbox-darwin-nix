@@ -7,6 +7,7 @@
   bwrap-escape-hatch,
   # Overridable by the home-manager module:
   preamblePath ? ./preamble.md,
+  preambleScriptPath ? null,
   bashrcSource ? ./bashrc,
   zshrcSource ? ./zshrc,
   extraPackages ? [],
@@ -31,6 +32,7 @@
       (prev.patches or [])
       ++ [
         ./opencode--no-builtin-anthropic.patch
+        ./opencode--instructions_command.patch
         ./opencode--cursor-beam.patch
       ];
   });
@@ -311,6 +313,10 @@
             bwrap_opts+=( --setenv "$_var" "''${!_var}" )
           fi
         done
+      ''}
+
+      ${lib.optionalString (preambleScriptPath != null) ''
+        bwrap_opts+=( --setenv OPENCODE_EXTRA_INSTRUCTIONS_COMMAND "${preambleScriptPath}" )
       ''}
 
       # OpenCode plugins (pinned via fetchFromGitHub, mounted read-only)

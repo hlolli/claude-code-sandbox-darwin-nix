@@ -1,0 +1,45 @@
+diff --git a/packages/opencode/src/session/instruction.ts b/packages/opencode/src/session/instruction.ts
+index 86f73d0fd..741af4a40 100644
+--- a/packages/opencode/src/session/instruction.ts
++++ b/packages/opencode/src/session/instruction.ts
+@@ -1,6 +1,7 @@
+ import path from "path"
+ import os from "os"
+ import { Global } from "../global"
++import { Process } from "../util/process"
+ import { Filesystem } from "../util/filesystem"
+ import { Config } from "../config/config"
+ import { Instance } from "../project/instance"
+@@ -118,6 +119,23 @@ export namespace InstructionPrompt {
+     const config = await Config.get()
+     const paths = await systemPaths()
+ 
++    const commands: Promise<string>[] = []
++    const instructionCmd = process.env.OPENCODE_EXTRA_INSTRUCTIONS_COMMAND
++    if (instructionCmd) {
++      if (!path.isAbsolute(instructionCmd)) {
++        log.warn("OPENCODE_EXTRA_INSTRUCTIONS_COMMAND ignored: must be an absolute path", { cmd: instructionCmd })
++      } else {
++        commands.push(
++          Process.text([instructionCmd], { abort: AbortSignal.timeout(10_000) })
++            .then(({ text }) => (text.trim() ? "Instructions from command: " + instructionCmd + "\n" + text.trim() : ""))
++            .catch((e) => {
++              log.warn("OPENCODE_EXTRA_INSTRUCTIONS_COMMAND failed", { cmd: instructionCmd, error: String(e) })
++              return ""
++            }),
++        )
++      }
++    }
++
+     const files = Array.from(paths).map(async (p) => {
+       const content = await Filesystem.readText(p).catch(() => "")
+       return content ? "Instructions from: " + p + "\n" + content : ""
+@@ -138,7 +156,7 @@ export namespace InstructionPrompt {
+         .then((x) => (x ? "Instructions from: " + url + "\n" + x : "")),
+     )
+ 
+-    return Promise.all([...files, ...fetches]).then((result) => result.filter(Boolean))
++    return Promise.all([...commands, ...files, ...fetches]).then((result) => result.filter(Boolean))
+   }
+ 
+   export function loaded(messages: MessageV2.WithParts[]) {
