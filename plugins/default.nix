@@ -141,6 +141,10 @@
       path = "${opencode-anthropic-auth}/dist/index.js";
     }
     {
+      name = "opencode-anthropic-auth-prompt.ts";
+      path = ./opencode-anthropic-auth-prompt.ts;
+    }
+    {
       name = "opencode-notifier.js";
       path = "${opencode-notifier}/dist/index.js";
     }
