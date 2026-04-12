@@ -234,6 +234,7 @@
         --setenv TERMINFO_DIRS /etc/profiles/per-user/"$USER"/share/terminfo:/run/current-system/sw/share/terminfo
         --setenv NIX_PATH ${lib.escapeShellArg "nixpkgs=${pkgs.path}"}
         --setenv OPENCODE_DISABLE_LSP_DOWNLOAD "true"
+        --setenv OPENCODE_DISABLE_PROJECT_CONFIG "true"
       )
 
       # Host paths bind-mounted read-only at the same location.
