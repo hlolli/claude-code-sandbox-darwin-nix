@@ -79,6 +79,22 @@ def _navigate(root, path_tuple):
     return node
 
 
+def _follow_single_children(subtree):
+    """Collapse single-child directory chains into a merged path.
+
+    Returns (extra_parts, terminal_node) where extra_parts is a list of
+    intermediate names traversed and terminal_node is the final node
+    (None for a file, dict for a directory with != 1 child).
+    """
+    extra = []
+    node = subtree
+    while node is not None and len(node) == 1:
+        child_name, child_sub = next(iter(node.items()))
+        extra.append(child_name)
+        node = child_sub
+    return extra, node
+
+
 def _greedy_expand(root, budget, max_depth):
     """Phase 1: fully expand the cheapest directories first via min-heap."""
     expanded = {()}  # root is always expanded
@@ -155,15 +171,22 @@ def _render(root, expanded, partial):
 
         for name, subtree in dirs:
             child_path = path_tuple + (name,)
-            if child_path in expanded:
-                lines.append(f"{prefix}{name}/")
-                walk(subtree, child_path, indent + 1)
-            elif child_path in partial:
-                lines.append(f"{prefix}{name}/")
-                _render_partial(lines, subtree, indent + 1, partial[child_path])
+            extra, terminal = _follow_single_children(subtree)
+            display_name = "/".join([name] + extra)
+            terminal_path = child_path + tuple(extra)
+
+            if terminal is None:
+                # Chain ended at a file
+                lines.append(f"{prefix}{display_name}")
+            elif terminal_path in expanded:
+                lines.append(f"{prefix}{display_name}/")
+                walk(terminal, terminal_path, indent + 1)
+            elif terminal_path in partial:
+                lines.append(f"{prefix}{display_name}/")
+                _render_partial(lines, terminal, indent + 1, partial[terminal_path])
             else:
-                n = count_descendants(subtree)
-                lines.append(f"{prefix}{name}/ ({n} items)")
+                n = count_descendants(terminal)
+                lines.append(f"{prefix}{display_name}/ ({n} items)")
 
         for name in files:
             lines.append(f"{prefix}{name}")
@@ -180,8 +203,13 @@ def _render_partial(lines, node, indent, n_show):
     prefix = "  " * indent
     for entry_name, entry_sub in entries[:n_show]:
         if entry_sub is not None:
-            n = count_descendants(entry_sub)
-            lines.append(f"{prefix}{entry_name}/ ({n} items)")
+            extra, terminal = _follow_single_children(entry_sub)
+            display_name = "/".join([entry_name] + extra)
+            if terminal is None:
+                lines.append(f"{prefix}{display_name}")
+            else:
+                n = count_descendants(terminal)
+                lines.append(f"{prefix}{display_name}/ ({n} items)")
         else:
             lines.append(f"{prefix}{entry_name}")
     hidden = len(entries) - n_show
