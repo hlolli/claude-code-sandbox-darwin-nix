@@ -329,6 +329,9 @@
 
       rw_opts=()
       ro_git_opts=()
+      mount_dirs=()
+      sandbox_cmd=( "$shell_exe" )
+      parsing_cmd=0
 
       # Make argv absolute without resolving symlinks (pwd -L)
       abspath() {
@@ -340,7 +343,26 @@
         fi
       }
 
-      for d in "$@"; do
+      for arg in "$@"; do
+        if [ "$parsing_cmd" -eq 1 ]; then
+          sandbox_cmd+=( "$arg" )
+          continue
+        fi
+
+        if [ "$arg" = -- ]; then
+          parsing_cmd=1
+          sandbox_cmd=()
+          continue
+        fi
+
+        mount_dirs+=( "$arg" )
+      done
+
+      if [ "$parsing_cmd" -eq 1 ] && [ "''${#sandbox_cmd[@]}" -eq 0 ]; then
+        sandbox_cmd=( "$shell_exe" )
+      fi
+
+      for d in "''${mount_dirs[@]}"; do
         [ -d "$d" ] || {
           echo >&2 "$0: cannot access '$d': No such file or directory"
           exit 1
@@ -369,7 +391,7 @@
         "''${rw_opts[@]}" \
         "''${ro_git_opts[@]}" \
         --seccomp 3 3< <(${lib.getExe bwrapTiocstiFilter}) \
-        -- ${sandboxInit} "$shell_exe"
+        -- ${sandboxInit} "''${sandbox_cmd[@]}"
     '';
     derivationArgs = {
       meta.description = "Enters a (multi-)project sandbox to run `opencode` inside; `.git` entries are mounted read-only unless OPENCODE_UNSAFE_RW_GIT is set.";

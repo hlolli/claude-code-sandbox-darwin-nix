@@ -49,10 +49,14 @@ Then run:
 
 ```
 opencode-bwrap /path/to/project [/path/to/other/project ...]
+opencode-bwrap /path/to/project -- opencode --help
 ```
 
 This drops you into a sandboxed Zsh shell with the listed project
 directories mounted read-write. Run `opencode` (aliased `oc`) from there.
+
+Pass `--` to stop parsing mount directories and run a command inside the
+sandbox instead of starting an interactive shell.
 
 ## Home Manager options
 
