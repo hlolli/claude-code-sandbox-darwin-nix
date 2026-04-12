@@ -168,25 +168,8 @@ in {
       type = types.nullOr types.path;
       default = lib.getExe (pkgs.writeShellApplication {
         name = "preamble-cmd";
-        text = ''
-          echo
-          echo '## Environment'
-          echo
-          echo "System: $(uname -a)"
-          echo "Date: $(date --utc --rfc-email)"
-          echo "User: $(id)"
-          echo "Home directory: $HOME"
-          echo "Current working directory: $(pwd)"
-          echo "Git root: $(git rev-parse --show-toplevel 2>/dev/null || echo 'not in a Git repository')"
-          echo "Nix shell: $(if [ -n "''${IN_NIX_SHELL:-}" ]; then echo yes; else echo no; fi)"
-          echo "Direnv: $(if [ -n "''${DIRENV_FILE:-}" ]; then echo yes; else echo no; fi)"
-          echo
-          if git rev-parse --show-toplevel >/dev/null 2>/dev/null ; then
-            echo '## Project information'
-            echo
-            ${lib.getExe pkgs.onefetch} --no-art --no-color-palette 2>&1 | ${lib.getExe pkgs.ansifilter}
-          fi
-        '';
+        runtimeInputs = with pkgs; [onefetch ansifilter coreutils gitMinimal tree gnused];
+        text = builtins.readFile ./opencode-bwrap/preamble.sh;
       });
       example = literalExpression ''null'';
       description = "Store path to a script whose stdout is appended to the preamble at runtime (sets `instructions_command` in the OpenCode config). `null` disables the feature.";
