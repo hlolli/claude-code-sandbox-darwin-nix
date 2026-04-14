@@ -221,7 +221,6 @@
         --ro-bind ${bashrc} /etc/bashrc
         --ro-bind ${zshrc} /etc/zshrc
         --ro-bind ${pkgs.emptyFile} "$HOME"/.zshrc
-        --ro-bind "${pkgs.nix-direnv}/share/nix-direnv/direnvrc" "$HOME"/.config/direnv/lib/nix-direnv.sh
         --ro-bind "${pkgs.coreutils}/bin/env" /usr/bin/env
         --setenv SHELL "$shell_exe"
         --setenv PATH ${lib.makeBinPath ([
@@ -298,6 +297,8 @@
       if [ -f "$HOME"/.config/git/ignore ] ; then
         bwrap_opts+=( --ro-bind "$HOME"/.config/git/ignore "$HOME"/.config/git/ignore )
       fi
+
+      bwrap_opts+=( --ro-bind "${pkgs.nix-direnv}/share/nix-direnv/direnvrc" "$HOME"/.config/direnv/lib/nix-direnv.sh )
 
       ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: value: ''
           bwrap_opts+=( --setenv ${lib.escapeShellArg name} ${lib.escapeShellArg value} )
