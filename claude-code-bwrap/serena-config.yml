@@ -1,12 +1,11 @@
-# Serena global config: disable tools that duplicate OpenCode’s built-in
-# capabilities. Copied into `~/.serena/` on each sandbox entry (it needs to be
-# writable).
+# Serena global config: disable tools that duplicate Claude Code's built-in
+# capabilities.
 gui_log_window: false
 web_dashboard: false
 web_dashboard_open_on_launch: false
 projects: []
 excluded_tools:
-  # Redundant with OpenCode's built-in tools
+  # Redundant with Claude Code's built-in tools
   - read_file
   - create_text_file
   - list_dir
@@ -14,14 +13,14 @@ excluded_tools:
   - search_for_pattern
   - replace_content
   - execute_shell_command
-  # Memory (no sandbox persistence for global memories)
+  # Memory (Claude Code has its own memory system)
   - write_memory
   - read_memory
   - list_memories
   - edit_memory
   - rename_memory
   - delete_memory
-  # Management (not needed in sandbox)
+  # Management (not needed)
   - initial_instructions
   - prepare_for_new_conversation
   - switch_modes
