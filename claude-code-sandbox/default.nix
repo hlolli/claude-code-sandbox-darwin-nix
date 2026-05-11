@@ -121,10 +121,6 @@
     (allow network-outbound)
     (allow network-inbound)
     (allow network-bind)
-  '' + lib.optionalString (sandboxExtraDeny != []) ''
-
-    ;; Extra deny rules
-    ${lib.concatMapStringsSep "\n" formatDenyRule sandboxExtraDeny}
   '' + lib.optionalString (sandboxExtraReadWritePaths != []) ''
 
     ;; Extra read/write paths
@@ -270,6 +266,13 @@
         if [[ -z "''${CLAUDE_CODE_SANDBOX_UNSAFE_RW_GIT-}" ]]; then
           echo '(deny file-write* (regex #"/\.git(/|$)"))'
         fi
+
+        ${lib.optionalString (sandboxExtraDeny != []) ''
+          # Extra deny rules (appended last to override project dir allows)
+          ${lib.concatMapStringsSep "\n" (rule:
+            "echo '${formatDenyRule rule}'"
+          ) sandboxExtraDeny}
+        ''}
       } >> "$sandbox_profile"
 
       exec /usr/bin/sandbox-exec -f "$sandbox_profile" ${claudeExe} "''${claude_args[@]}"
