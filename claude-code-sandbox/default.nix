@@ -88,9 +88,22 @@
     ;; Executable mapping (required to load binaries and shared libraries)
     (allow file-map-executable)
 
-    ;; Allow stat/readdir everywhere (needed for PATH resolution).
-    ;; This does NOT allow reading file contents.
-    (allow file-read-metadata)
+    ;; Allow stat/readdir for PATH resolution and system paths.
+    (allow file-read-metadata
+      (subpath "/nix")
+      (subpath "/usr")
+      (subpath "/bin")
+      (subpath "/sbin")
+      (subpath "/System")
+      (subpath "/Library")
+      (subpath "/etc")
+      (subpath "/private")
+      (subpath "/opt")
+      (subpath "/run")
+      (subpath "/var")
+      (subpath "/tmp")
+      (subpath "/dev")
+      (literal "/"))
 
     ;; System file reads (read-only)
     (allow file-read*
@@ -245,6 +258,10 @@
         echo "(allow file-read* (literal \"$HOME/.profile\"))"
         echo "(allow file-read* (literal \"$HOME/.zprofile\"))"
         echo "(allow file-read* (literal \"$HOME/.zshenv\"))"
+
+        # stat/readdir for $HOME and PATH directories under it
+        # (needed for posix_spawnp PATH resolution, does not expose contents)
+        echo "(allow file-read-metadata (subpath \"$HOME\"))"
 
         # Nix profile (read-only, for terminfo and tool paths)
         echo "(allow file-read* (subpath \"$HOME/.nix-profile\"))"
