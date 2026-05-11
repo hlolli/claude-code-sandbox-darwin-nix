@@ -38,15 +38,15 @@
             (import ./darwin-module.nix {inherit inputs;})
             darwinOptionStubs
             {
-              programs.claude-code-bwrap = {
+              programs.claude-code-sandbox = {
                 enable = true;
               };
             }
           ];
         };
       in rec {
-        default = claude-code-bwrap;
-        claude-code-bwrap = builtins.head darwinEval.config.environment.systemPackages;
+        default = claude-code-sandbox;
+        claude-code-sandbox = builtins.head darwinEval.config.environment.systemPackages;
       });
   };
 }

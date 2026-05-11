@@ -1,6 +1,6 @@
-# Bash completions for claude-code-bwrap
+# Bash completions for claude-code-sandbox
 # Before -- complete directories; after -- args are passed to claude.
-_claude_code_bwrap() {
+_claude_code_sandbox() {
     local cur i past_separator=0
     cur="${COMP_WORDS[COMP_CWORD]}"
     for (( i=1; i < COMP_CWORD; i++ )); do
@@ -13,4 +13,4 @@ _claude_code_bwrap() {
         COMPREPLY=( $(compgen -d -- "$cur") )
     fi
 }
-complete -o filenames -F _claude_code_bwrap claude-code-bwrap
+complete -o filenames -F _claude_code_sandbox claude-code-sandbox
