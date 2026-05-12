@@ -20,7 +20,7 @@
       if cfg.preambleScript != null
       then cfg.preambleScript
       else null;
-    inherit (cfg) extraPackages extraEnv extraFwdEnv mcpServers;
+    inherit (cfg) claudeCodePackage extraPackages extraEnv extraFwdEnv mcpServers;
     sandboxExtraDeny = cfg.sandbox.extraDeny;
     sandboxExtraReadWritePaths = cfg.sandbox.extraReadWritePaths;
     sandboxExtraRules = cfg.sandbox.extraRules;
@@ -28,6 +28,13 @@
 in {
   options.programs.claude-code-sandbox = {
     enable = mkEnableOption "claude-code-sandbox macOS sandbox wrapper for Claude Code";
+
+    claudeCodePackage = mkOption {
+      type = types.package;
+      default = pkgs.claude-code;
+      example = literalExpression "pkgs-unstable.claude-code";
+      description = "The claude-code package to wrap. Override to use a different nixpkgs pin or version.";
+    };
 
     package = mkOption {
       type = types.package;

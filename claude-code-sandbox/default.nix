@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  claudeCodePackage ? pkgs.claude-code,
   serena ? null,
   preambleScriptPath ? null,
   extraPackages ? [],
@@ -133,7 +134,7 @@
     ${lib.concatStringsSep "\n" sandboxExtraRules}
   '');
 
-  claudeExe = lib.getExe pkgs.claude-code;
+  claudeExe = lib.getExe claudeCodePackage;
 
   wrapper = pkgs.writeShellApplication {
     name = "claude-code-sandbox";
