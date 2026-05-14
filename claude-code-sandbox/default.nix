@@ -218,8 +218,14 @@
       cwd="$(pwd -P)"
 
       {
-        # TMPDIR (usually /private/var/folders/.../T/)
+        # TMPDIR (usually /var/folders/.../T/ -> /private/var/folders/.../T/)
+        # Add both the symlink and resolved path since sandbox-exec may
+        # match on the real path after symlink resolution.
         echo "(allow file-read* file-write* (subpath \"''${TMPDIR:-/tmp}\"))"
+        _real_tmpdir="$(cd "''${TMPDIR:-/tmp}" 2>/dev/null && pwd -P)"
+        if [[ "$_real_tmpdir" != "''${TMPDIR:-/tmp}" ]]; then
+          echo "(allow file-read* file-write* (subpath \"$_real_tmpdir\"))"
+        fi
 
         # Allowed $HOME paths (read-only unless noted)
         home_allowed_paths=(
