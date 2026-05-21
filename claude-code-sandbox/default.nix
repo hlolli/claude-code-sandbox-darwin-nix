@@ -82,8 +82,6 @@
       (subpath "/Library")
       (subpath "/etc")
       (subpath "/private")
-      (subpath "/opt")
-      (subpath "/run")
       (subpath "/var")
       (subpath "/tmp")
       (subpath "/dev")
@@ -234,8 +232,10 @@
           "$HOME/Library/Keychains"  # r: OAuth credentials
           "$HOME/Library/Preferences" # r/w: macOS notifications
           "$HOME/.config/git"        # r: git config
+          "$HOME/.config/nix"        # r: user nix.conf
           "$HOME/.nix-profile"       # r: nix tools, terminfo
           "$HOME/.nix-defexpr"       # r: nix expressions
+          "$HOME/.local/state/nix"   # r: nix channels symlink target (via .nix-defexpr/channels)
           "$HOME/.cache/nix"         # r/w: nix eval cache, flake registry, tarball cache; nix commands fail without it
           ${lib.optionalString (serena != null) ''"$HOME/.serena"  # r/w: Serena''}
         )
@@ -275,12 +275,25 @@
         done
 
         # Metadata for PATH entries under $HOME + parent chain
+        # Also discover non-system prefixes (e.g. Homebrew) from PATH and
+        # allow reading their entire prefix so dyld can load shared libraries.
+        declare -A _seen_prefix
         IFS=':' read -ra _path_entries <<< "$PATH"
         for _entry in "''${_path_entries[@]}"; do
           case "$_entry" in
             "$HOME"/*)
               echo "(allow file-read-metadata (subpath \"$_entry\"))"
               _allow_meta_tree "$_entry"
+              ;;
+            /opt/*)
+              # Discover Homebrew or other /opt prefixes from PATH.
+              # e.g. /opt/homebrew/bin -> allow read on /opt/homebrew
+              # (dyld needs Cellar/Frameworks/lib which are siblings of bin)
+              _prefix="$(dirname "$_entry")"
+              if [[ -z "''${_seen_prefix[$_prefix]:-}" ]]; then
+                _seen_prefix["$_prefix"]=1
+                echo "(allow file-read* (subpath \"$_prefix\"))"
+              fi
               ;;
           esac
         done
