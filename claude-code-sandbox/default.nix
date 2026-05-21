@@ -236,6 +236,7 @@
           "$HOME/.nix-profile"       # r: nix tools, terminfo
           "$HOME/.nix-defexpr"       # r: nix expressions
           "$HOME/.local/state/nix"   # r: nix channels symlink target (via .nix-defexpr/channels)
+          "$HOME/.local/share/nix"   # r: nix trusted-settings.json
           "$HOME/.cache/nix"         # r/w: nix eval cache, flake registry, tarball cache; nix commands fail without it
           ${lib.optionalString (serena != null) ''"$HOME/.serena"  # r/w: Serena''}
         )
@@ -323,6 +324,15 @@
         # Write access for specific paths
         for _p in "''${home_rw_paths[@]}"; do
           echo "(allow file-write* (subpath \"$_p\"))"
+        done
+
+        # Tool caches discovered from environment (Go, Cargo, etc.)
+        # Allow r/w so build tools work; only added if the env var is set.
+        for _var in GOCACHE GOMODCACHE GOPATH CARGO_HOME; do
+          if [[ -n "''${!_var+x}" && "''${!_var}" == "$HOME"/* ]]; then
+            echo "(allow file-read* file-write* (subpath \"''${!_var}\"))"
+            _allow_meta_tree "''${!_var}"
+          fi
         done
 
         # Current working directory -- always accessible
