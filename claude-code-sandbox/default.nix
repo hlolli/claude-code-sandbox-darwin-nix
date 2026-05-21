@@ -82,6 +82,7 @@
       (subpath "/Library")
       (subpath "/etc")
       (subpath "/private")
+      (literal "/opt")
       (subpath "/var")
       (subpath "/tmp")
       (subpath "/dev")
@@ -275,26 +276,36 @@
           _allow_meta_tree "$_p"
         done
 
-        # Metadata for PATH entries under $HOME + parent chain
-        # Also discover non-system prefixes (e.g. Homebrew) from PATH and
-        # allow reading their entire prefix so dyld can load shared libraries.
+        # For every PATH entry not already covered by system reads in the
+        # template, add metadata (stat) for the entry and its parent chain.
+        # For /opt/* and /Applications/* entries, also allow file reads on
+        # the parent prefix (dyld needs Cellar/Frameworks/lib siblings).
         declare -A _seen_prefix
         IFS=':' read -ra _path_entries <<< "$PATH"
         for _entry in "''${_path_entries[@]}"; do
           case "$_entry" in
+            /nix/*|/usr/*|/bin|/sbin) ;; # covered by template
             "$HOME"/*)
               echo "(allow file-read-metadata (subpath \"$_entry\"))"
               _allow_meta_tree "$_entry"
               ;;
-            /opt/*)
-              # Discover Homebrew or other /opt prefixes from PATH.
-              # e.g. /opt/homebrew/bin -> allow read on /opt/homebrew
-              # (dyld needs Cellar/Frameworks/lib which are siblings of bin)
-              _prefix="$(dirname "$_entry")"
-              if [[ -z "''${_seen_prefix[$_prefix]:-}" ]]; then
-                _seen_prefix["$_prefix"]=1
-                echo "(allow file-read* (subpath \"$_prefix\"))"
-              fi
+            *)
+              # Non-system PATH entry (e.g. /opt/homebrew/bin, /Applications/...)
+              echo "(allow file-read-metadata (subpath \"$_entry\"))"
+              _p="$_entry"
+              while [[ "$_p" != "/" ]]; do
+                _allow_meta "$_p"
+                _p="$(dirname "$_p")"
+              done
+              case "$_entry" in
+                /opt/*|/Applications/*)
+                  _prefix="$(dirname "$_entry")"
+                  if [[ -z "''${_seen_prefix[$_prefix]:-}" ]]; then
+                    _seen_prefix["$_prefix"]=1
+                    echo "(allow file-read* (subpath \"$_prefix\"))"
+                  fi
+                  ;;
+              esac
               ;;
           esac
         done
